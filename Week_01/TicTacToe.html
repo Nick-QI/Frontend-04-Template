@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TicTacToe</title>
+    <style>
+      #app {
+        width: 307px;
+        background: skyblue;
+        margin: 200px auto;
+        display: flex;
+        flex-wrap: wrap;
+      }
+
+      .cell {
+        display: inline-block;
+        width: 100px;
+        height: 100px;
+        border: 1px solid #fff;
+        line-height: 100px;
+        text-align: center;
+        font-size: 50px;
+      }
+
+    </style>
+  </head>
+
+  <body>
+
+    <div id="app">
+
+    </div>
+    <button onclick='init()'>重新开始</button>
+    <script>
+      const EMPTY = 0
+      const PLAYER_1 = 1
+      const PLAYER_2 = 2
+      const OOP = {
+        [EMPTY]: '',
+        [PLAYER_1]: '⭕️',
+        [PLAYER_2]: '❌'
+      }
+
+      let color = PLAYER_1
+      let pattern = create()
+      let gameFinish = false
+
+      init()
+
+      function init() {
+        pattern = create()
+        gameFinish = false
+        show()
+      }
+
+
+      function create(limit = 9, rowLimit = 3) {
+        let res = []
+        while (limit > 0) {
+          let arr = []
+          for (let i = 0; i < rowLimit; i++) {
+            arr.push(EMPTY)
+          }
+          res.push(arr)
+          limit -= rowLimit
+        }
+        return res
+      }
+
+      function show() {
+        let app = document.querySelector('#app')
+
+        app.innerHTML = ''
+        const row = pattern.length
+        for (let i = 0; i < row; i++) {
+          let item = pattern[i]
+          let childRow = item.length
+          for (let j = 0; j < childRow; j++) {
+            const cell = document.createElement('div')
+            cell.classList.add('cell')
+            cell.innerText = OOP[item[j]]
+            cell.addEventListener('click', () => userMove(j, i))
+            app.appendChild(cell)
+          }
+          app.appendChild(document.createElement('br'))
+        }
+      }
+      function userMove(x, y) {
+        if (gameFinish) {
+          return alert('游戏已结束')
+        }
+        if (pattern[y][x] !== EMPTY) {
+          return alert('已落子')
+        }
+        pattern[y][x] = color
+        // 检测当前 是否胜利
+        if (check(pattern, color)) {
+          gameFinish = true
+          alert(OOP[color] + ' is winner!!!')
+        }
+        color = 3 - color // 切换选手
+
+        show()
+        if (!gameFinish) {
+          setTimeout(() => {
+            computerMove()
+          }, 100);
+        }
+      }
+
+      function computerMove() {
+        let choice = bestChoice(pattern, color)
+        console.log(choice)
+        if (choice.point) {
+          const [x, y] = choice.point
+          pattern[x][y] = color
+        }
+        if (check(pattern, color)) {
+          gameFinish = true
+          alert(OOP[color] + ' is winner!!!')
+        }
+        color = 3 - color
+        show()
+
+      }
+      // 三横 三竖 两斜
+      function check(pattern, color) {
+        const handler = (arr) => {
+          for (let i = 0; i < arr.length; i++) {
+            let win = true
+            let item = arr[i]
+            win = !item.some(t => t !== color)  // 该数组中只要有一个与当前player不相同,即为false
+            if (win) {
+              return true
+            }
+          }
+          return false
+        }
+        // 三横
+        let rows = pattern
+        if (handler(rows)) {
+          return true
+        }
+
+        // 三竖
+        let cols = []
+        for (let y = 0; y < 3; y++) {
+          let arr = []
+          for (let x = 0; x < 3; x++) {
+            arr.push(pattern[x][y])
+          }
+          cols.push(arr)
+        }
+        if (handler(cols)) {
+          return true
+        }
+
+
+        // 两斜
+        let inclined = [[], []]
+        for (let i = 0; i < 3; i++) {
+          inclined[0].push(pattern[i][2 - i])
+          inclined[1].push(pattern[i][i])
+        }
+        if (handler(inclined)) {
+          return true
+        }
+
+      }
+
+      function willWin(pattern, color) {
+        for (let x = 0; x < 3; x++) {
+          for (let y = 0; y < 3; y++) {
+            if (pattern[x][y] === EMPTY) {
+              let tmp = clone(pattern)
+              tmp[x][y] = color
+              if (check(tmp, color)) {
+                return [x, y]
+              }
+            } else {
+              continue
+            }
+          }
+        }
+        return null
+      }
+
+      const WIN = 1
+      const PEACE = 0
+      const LOST = -1
+      /* 
+        递归去寻找willWin 的结果
+      */
+      function bestChoice(pattern, color) {
+        let p
+        /* 老司机写法, 先执行,后以执行函数返回值来判断是否执行结构体中 */
+        if (p = willWin(pattern, color)) {
+          return {
+            point: p,
+            result: WIN
+          }
+        }
+
+        let result = -2  // 最坏结果
+        let point = null
+
+        outer: for (let y = 0; y < 3; y++) {
+          for (let x = 0; x < 3; x++) {
+            if (pattern[y][x] !== EMPTY) {
+              continue
+            }
+            let tmp = clone(pattern)
+            tmp[y][x] = color
+            let r = bestChoice(tmp, 3 - color).result  // 查找对方最好的结果
+            /* 对方最好的结果 对于我们来说就是最坏的结果. -1 0 1 ; 当对方为-1 时 对于我们来说才是最好的结果
+              所以 取反 -r , 即 --1 === 1 , 1 > result ;
+              result 默认-2 最坏结果.亦是最低结果.不可能比-2 还差了
+            */
+            if (-r > result) {
+              result = -r
+              point = [y, x]
+            }
+            if (result === WIN) {
+              break outer  // 跳出最外层循环
+            }
+          }
+        }
+        return {
+          point,
+          result: point ? result : PEACE
+        }
+      }
+
+      function clone(obj) {
+        return JSON.parse(JSON.stringify(obj))
+      } 
+    </script>
+  </body>
+
+</html>
