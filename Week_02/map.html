@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+      .cell {
+        display: inline-block;
+        width: 6px;
+        height: 6px;
+        line-height: 7px;
+        background-color: gray;
+        border-bottom: 1px solid white;
+        border-right: 1px solid white;
+        vertical-align: top;
+      }
+
+      /* X_LENGTH * 6 + X_LENGTH * border-right */
+      #container {
+        font-size: 0;
+      }
+
+    </style>
+  </head>
+
+  <body>
+    <div id="container"></div>
+    <button onclick='save()'>save</button>
+    <script>
+      const X_LENGTH = 50
+      const Y_LENGTH = 40
+      const EMPTY = 0
+      const WALL = 1
+      const ROAD = 2
+      const STATUS = {
+        [EMPTY]: 'gray',
+        [WALL]: 'black',
+        [ROAD]: 'skyblue',
+      }
+
+      const container = document.querySelector('#container')
+
+      let map = localStorage['map'] ? JSON.parse(localStorage['map']) : Array(X_LENGTH * Y_LENGTH).fill(EMPTY)
+      let mousedown = false // 鼠标是否按下
+      let clear = false // 是否清除当前状态
+
+
+      init()
+
+      setTimeout(() => {
+        findPath(map, [0, 0], [40, 35]).then(res => console.log(res)).catch(err => console.error(err))
+      });
+
+      function init() {
+        container.style.width = `${X_LENGTH * 6 + X_LENGTH * 1}px`
+        // 这边可以做优化,生成整体html代码,最后一步塞入,比每次都塞入好
+        let insertCells = ''
+        for (let y = 0; y < Y_LENGTH; y++) {
+          for (let x = 0; x < X_LENGTH; x++) {
+            let index = X_LENGTH * y + x
+            let target = map[index]
+            insertCells += `<span class='cell' style="background-color:${STATUS[target]}" data-index=${index}></span>`
+          }
+        }
+
+        container.innerHTML = insertCells
+
+        document.addEventListener('mousedown', e => {
+          mousedown = true
+          clear = (e.which === 3)
+        })
+
+        document.addEventListener('mouseup', () => mousedown = false)
+
+        document.addEventListener('contextmenu', e => e.preventDefault())
+
+        container.addEventListener('mouseover', e => {
+          const { target } = e
+          const { index } = target.dataset
+
+          if (mousedown) {
+            if (clear) {
+              map[index] = EMPTY
+              target.style.backgroundColor = STATUS[EMPTY]
+            } else {
+              map[index] = WALL
+              target.style.backgroundColor = STATUS[WALL]
+            }
+          }
+        })
+      }
+
+
+
+      async function findPath(map, start, end) {
+        let queue = new Sorted([start], (a, b) => DISTANCE(a) - DISTANCE(b))
+        let table = Object.create(map)  // 单独拉出来,存取每个下标对应的上个节点的位置
+
+        // 设置end点颜色
+        container.children[end[1] * X_LENGTH + end[0]].style.backgroundColor = 'red'
+
+        const INSERT = async (x, y, pre) => {
+          // 边界处理
+          if (x < 0 || x >= X_LENGTH || y < 0 || y >= Y_LENGTH) {
+            return
+          }
+          // 一维数组转二维数组的下标
+          const index = X_LENGTH * y + x
+          // 当前已被填充 return
+          // TODO: 当前需要做的优化项, 当前前驱节点并不一定是最优节点.检测并return出新的前驱节点
+          if (table[index]) {
+            // console.log('这是我的前驱',table[index], x, y)
+            return
+          }
+          // 保存前驱节点
+          table[index] = pre
+          await sleep()
+          container.children[index].style.backgroundColor = STATUS[ROAD]
+          queue.give([x, y])
+        }
+
+        // 其实这就是一个数学问题, 两个点的x,y 这不就是三角函数么 两点之间的直线距离
+        const DISTANCE = (point) => {
+          return (point[0] - end[0]) ** 2 + (point[1] - end[1]) ** 2
+        }
+
+        while (queue.length) {
+          let [x, y] = queue.take()
+          // 到达终点处理
+          if (x === end[0] && y === end[1]) {
+            let path = []
+            while (x != start[0] || y != start[1]) {
+              path.push(map[X_LENGTH * y + x])
+              let index = X_LENGTH * y + x;
+              [x, y] = table[index]
+              await sleep()
+              container.children[X_LENGTH * y + x].style.backgroundColor = 'orange'
+            }
+            return path
+          }
+
+          await INSERT(x, y + 1, [x, y]) // 下
+          await INSERT(x, y - 1, [x, y]) // 上
+          await INSERT(x + 1, y, [x, y]) // 右
+          await INSERT(x - 1, y, [x, y]) // 左
+
+          await INSERT(x - 1, y + 1, [x, y]) // 左下
+          await INSERT(x - 1, y - 1, [x, y]) // 左上
+          await INSERT(x + 1, y + 1, [x, y]) // 右下
+          await INSERT(x + 1, y + 1, [x, y]) // 右上
+        }
+        return false
+      }
+
+      function save() {
+        localStorage.map = JSON.stringify(map)
+      }
+
+      function sleep(t = 30) {
+        return new Promise((resolve, reject) => {
+          setTimeout(resolve, t);
+        })
+      }
+
+
+      class Sorted {
+        constructor(data, compare) {
+          this.data = data
+          this.compare = compare || ((a, b) => a - b)  // 比大小,  小数减大数 必为负
+        }
+        take() {
+          if (!this.data.length) { return }
+          let min = this.data[0]
+          let minIndex = 0
+          // 寻找最小数
+          for (let i = 1; i < this.data.length; i++) {
+            if (this.compare(this.data[i], min) < 0) {
+              min = this.data[i]
+              minIndex = i
+            }
+          }
+
+          // 找到最小数,将其在数组中剔除
+          this.data[minIndex] = this.data[this.data.length - 1]
+          this.data.pop()
+
+          // 弹出最小值
+          return min
+        }
+
+        give(v) {
+          this.data.push(v)
+        }
+
+        get length() {
+          return this.data.length
+        }
+      }
+    </script>
+  </body>
+
+</html>
