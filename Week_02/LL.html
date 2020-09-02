@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+  </head>
+
+  <body>
+    <script>
+      const regExp = /([0-9\.]+)|([ \t]+)|([\r\n]+)|(\*)|(\/)|(\+)|(\-)/g
+      const dictionary = [
+        'Number', 'Whitespace', 'LineTerminator', '*', '/', '+', '-'
+      ]
+      let source = []
+
+      function* tokenize(source) {
+        let result = null
+        // console.log(source.match(regExp))
+        let lastIndex = 0
+        while (true) {
+          lastIndex = regExp.lastIndex
+          result = regExp.exec(source)
+          // console.log('--------------->', result, regExp.lastIndex)
+          if (!result) {
+            break
+          }
+          if (regExp.lastIndex - lastIndex > result[0].length) {
+            console.error('解析错误')
+            break
+          }
+
+          let token = {
+            type: '',
+            value: ''
+          }
+          // 从0开始,0是匹配的所有结果
+          for (let i = 1; i <= dictionary.length; i++) {
+            if (result[i]) {
+              // console.log('====>', i, dictionary[i - 1])
+              token.type = dictionary[i - 1]
+            }
+          }
+          token.value = result[0]
+          yield token
+        }
+        yield {
+          type: 'EOF'
+        }
+
+      }
+      for (const token of tokenize('1023 + 10')) {
+        console.log(token)
+        if (token.type !== 'Whitespace' && token.type !== 'LineTerminator') {
+          source.push(token)
+        }
+      }
+
+      Expression(source)
+      console.log(source)
+
+      function Expression(tokens) {
+        if (source[0].type === 'AdditiveExpression' && source[1] && source[1].type === 'EOF') {
+          let node = {
+            type: 'Expression',
+            children: [source.shift(), source.shift()]
+          }
+          source.unshift(node)
+          return node
+        }
+        AdditiveExpression(source)
+        return Expression(source)
+      }
+
+      function AdditiveExpression(source) {
+
+        if (source[0].type === 'MultiplicativeExpression') {
+          let node = {
+            type: 'AdditiveExpression',
+            children: [source[0]]
+          }
+          source[0] = node
+          return AdditiveExpression(source)
+        }
+        if (source[0].type === 'AdditiveExpression' && source[1]) {
+          if (source[1].type === '+') {
+            let node = {
+              type: 'AdditiveExpression',
+              operator: '+',
+              children: []
+            }
+            node.children.push(source.shift())
+            node.children.push(source.shift())
+            MultiplicativeExpression(source)
+            node.children.push(source.shift())
+            source.unshift(node)
+            return AdditiveExpression(source)
+          }
+          if (source[1].type === '-') {
+            let node = {
+              type: 'AdditiveExpression',
+              operator: '-',
+              children: []
+            }
+            node.children.push(source.shift())
+            node.children.push(source.shift())
+            MultiplicativeExpression(source)
+            node.children.push(source.shift())
+            source.unshift(node)
+            return AdditiveExpression(source)
+          }
+        }
+        if (source[0].type === 'AdditiveExpression') {
+          return source[0]
+        }
+        MultiplicativeExpression(source)
+        return AdditiveExpression(source)
+      }
+
+      function MultiplicativeExpression(source) {
+        if (source[0].type === 'Number') {
+          let node = {
+            type: 'MultiplicativeExpression',
+            children: [source[0]]
+          }
+          source[0] = node
+          return MultiplicativeExpression(source)
+        }
+        if (source[0].type === 'MultiplicativeExpression' && source[1]) {
+          if (source[1].type === '*') {
+            let node = {
+              type: 'MultiplicativeExpression',
+              operator: '*',
+              children: []
+            }
+            node.children.push(source.shift()) // 弹出第一个 MultiplicativeExpression
+            node.children.push(source.shift()) // 弹出 符号
+            node.children.push(source.shift()) // 弹出 第二个数
+            source.unshift(node)
+            return MultiplicativeExpression(source)
+          }
+          if (source[1].type === '/') {
+            let node = {
+              type: 'MultiplicativeExpression',
+              operator: '/',
+              children: []
+            }
+            node.children.push(source.shift())
+            node.children.push(source.shift())
+            node.children.push(source.shift())
+            source.unshift(node)
+            return MultiplicativeExpression(source)
+          }
+        }
+        if (source[0].type === 'MultiplicativeExpression') {
+          return source[0]
+        }
+
+        return MultiplicativeExpression(source)
+      }
+
+    </script>
+  </body>
+
+</html>

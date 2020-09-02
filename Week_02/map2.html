@@ -50,7 +50,7 @@
       init()
 
       setTimeout(() => {
-        findPath(map, [0, 0], [5,50]).then(res => console.log(res)).catch(err => console.error(err))
+        findPath(map, [40, 38], [0, 0]).then(res => console.log(res)).catch(err => console.error(err))
       });
 
       function init() {
@@ -92,18 +92,18 @@
         })
       }
 
+
+
       async function findPath(map, start, end) {
         let queue = new Sorted([start], (a, b) => DISTANCE(a) - DISTANCE(b))
         let table = Object.create(map)  // 单独拉出来,存取每个下标对应的上个节点的位置
-        // let d = Object.create(map)
-
         const startIndex = start[1] * X_LENGTH + start[0]
         const endIndex = end[1] * X_LENGTH + end[0]
         const UN_SET_COLOR = [startIndex, endIndex]
         // 设置end点颜色
         container.children[endIndex].style.backgroundColor = 'red'
         // 设置start点颜色
-        container.children[startIndex].style.backgroundColor = 'purple'
+        container.children[startIndex].style.backgroundColor = 'lightgreen'
 
         const INSERT = async (x, y, pre) => {
           // 边界处理
@@ -115,14 +115,11 @@
           // 当前已被填充 return
           // TODO: 当前需要做的优化项, 当前前驱节点并不一定是最优节点.检测并return出新的前驱节点
           if (table[index]) {
-            // console.log('这是我的前驱',table[index], x, y)                      
+            // console.log('这是我的前驱',table[index], x, y)
             return
           }
           // 保存前驱节点
           table[index] = pre
-          // d[index] = {
-
-          // }
           await sleep()
           if (!UN_SET_COLOR.some(t => t === index)) {
             container.children[index].style.backgroundColor = STATUS[ROAD]
@@ -137,7 +134,6 @@
 
         while (queue.length) {
           let [x, y] = queue.take()
-          console.log(x,y)
           // 到达终点处理
           if (x === end[0] && y === end[1]) {
             let path = []
@@ -146,22 +142,23 @@
               let index = X_LENGTH * y + x;
               [x, y] = table[index]
               await sleep()
-              if (!UN_SET_COLOR.some(t => t === X_LENGTH * y + x)) {
+              if (!UN_SET_COLOR.some(t => t === index)) {
                 container.children[X_LENGTH * y + x].style.backgroundColor = 'orange'
+
               }
             }
             return [0, ...path.reverse()]
           }
-          // await INSERT(x + 1, y - 1, [x, y]) // 右上
-          // await INSERT(x + 1, y + 1, [x, y]) // 右下
-          // await INSERT(x - 1, y + 1, [x, y]) // 左下
-          // await INSERT(x - 1, y - 1, [x, y]) // 左上
-          // await INSERT(x, y + 1, [x, y]) // 下
-          // await INSERT(x, y - 1, [x, y]) // 上
-          // await INSERT(x + 1, y, [x, y]) // 右
-          // await INSERT(x - 1, y, [x, y]) // 左
 
-         
+          await INSERT(x, y + 1, [x, y]) // 下
+          await INSERT(x, y - 1, [x, y]) // 上
+          await INSERT(x + 1, y, [x, y]) // 右
+          await INSERT(x - 1, y, [x, y]) // 左
+
+          await INSERT(x - 1, y + 1, [x, y]) // 左下
+          await INSERT(x - 1, y - 1, [x, y]) // 左上
+          await INSERT(x + 1, y + 1, [x, y]) // 右下
+          await INSERT(x + 1, y + 1, [x, y]) // 右上
         }
 
         return false
