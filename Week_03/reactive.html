@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+      #color {
+        width: 100px;
+        height: 100px;
+      }
+
+    </style>
+  </head>
+
+  <body>
+    <input type="text" id='input'>
+    <input type="range" id="r" max='255'>
+    <input type="range" id="g" max='255'>
+    <input type="range" id="b" max='255'>
+
+    <div id="color"></div>
+
+    <script>
+      let globalCbs = new Map()
+      let reactivities = new Map()
+      let usedReactivities = []
+
+      //  被引用后  重新set 才会执行
+      function effect(cb) {
+        usedReactivities = []
+        cb()  // 预先执行
+        for (let [obj, prop] of usedReactivities) {
+          if (!globalCbs.has(obj)) {
+            globalCbs.set(obj, new Map())
+          }
+          if (!globalCbs.get(obj).has(prop)) {
+            globalCbs.get(obj).set(prop, [])
+          }
+          globalCbs.get(obj).get(prop).push(cb)
+        }
+      }
+
+      function reactive(object) {
+        if (reactivities.has(object)) {
+          return reactivities.get(object)
+        }
+
+        let proxy = new Proxy(object, {
+          set(obj, prop, val) {
+            console.log('set', obj, prop, val, globalCbs)
+            obj[prop] = val
+            if (globalCbs.get(obj) && globalCbs.get(obj).get(prop)) {
+              for (let cb of globalCbs.get(obj).get(prop)) {
+                cb()
+              }
+            }
+            return obj[prop]
+          },
+          get(obj, prop) {
+            console.log('get', obj, prop)
+            usedReactivities.push([obj, prop])
+            if (typeof obj[prop] === 'object') {
+              return reactive(obj[prop])
+            }
+            return obj[prop]
+          }
+        })
+
+        reactivities.set(object, proxy)
+        return proxy
+      }
+
+      let obj = {
+        text: '111',
+        r: 0,
+        g: 0,
+        b: 0
+      }
+      const inputEl = document.querySelector('#input')
+      const rEl = document.querySelector('#r')
+      const gEl = document.querySelector('#g')
+      const bEl = document.querySelector('#b')
+
+
+      let po = reactive(obj)
+
+      effect(() => {
+        inputEl.value = po.text
+      })
+      effect(() => {
+        rEl.value = po.r
+      })
+      effect(() => {
+        gEl.value = po.g
+      })
+      effect(() => {
+        bEl.value = po.b
+      })
+      effect(() => {
+        document.querySelector('#color').style.backgroundColor = `rgb(${po.r},${po.g},${po.b})`
+      })
+
+      inputEl.addEventListener('input', (e) => {
+        po.text = e.target.value
+      })
+      rEl.addEventListener('input', (e) => {
+        po.r = e.target.value
+      })
+      gEl.addEventListener('input', (e) => {
+        po.g = e.target.value
+      })
+      bEl.addEventListener('input', (e) => {
+        po.b = e.target.value
+      })
+    </script>
+  </body>
+
+</html>
