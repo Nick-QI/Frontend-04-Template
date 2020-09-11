@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+      #box {
+        display: inline-block;
+        width: 100px;
+        height: 100px;
+        background-color: aqua;
+      }
+
+    </style>
+  </head>
+
+  <body>
+    <div id="container">
+我是测试属于我是测试属于
+我是测试属于
+我是测试属于
+我是测试属于
+我是测试属于
+我是测试属于
+我是测试属于
+我是测试属于
+我是测试属于
+我是测试属于
+我是测试属于
+我是测试属于
+我是测试属于
+我是测试属于
+我是测试属于
+我是测试属于
+我是测试属于
+我是测试属于
+我是测试属于
+我是测试属于
+我是测试属于
+我是测试属于
+我是测试属于
+我是测试属于
+我是测试属于
+我是测试属于
+我是测试属于
+我是测试属于
+
+    </div>
+    <div id="box"></div>
+    <script>
+
+      const box = document.querySelector('#box')
+      let baseX = 0
+      let baseY = 0
+
+      box.addEventListener('mousedown', function (e) {
+        const [startX, startY] = [e.clientX, e.clientY]
+
+        const up = e => {
+          baseX = baseX + e.clientX - startX
+          baseY = baseY + e.clientY - startY
+          document.removeEventListener('mousemove', move)
+          document.removeEventListener('mouseup', up)
+        }
+
+        const move = e => {
+          let range = getNearest(e.clientX, e.clientY)
+          range.insertNode(box)
+          // box.style.transform = `translate(${baseX + e.clientX - startX}px,${baseY + e.clientY - startY}px)`
+        }
+
+        document.addEventListener('mousemove', move)
+        document.addEventListener('mouseup', up)
+
+      })
+
+      let ranges = []
+
+      const container = document.querySelector('#container')
+      const text = container.childNodes[0]
+      for (let i = 0; i < text.textContent.length; i++) {
+        let range = document.createRange()
+        range.setStart(text, i)
+        range.setEnd(text, i)
+
+        ranges.push(range)
+      }
+
+      function getNearest(x, y) {
+        let min = Infinity
+        let nearest = null
+
+        for (const range of ranges) {
+          let rect = range.getBoundingClientRect()
+          let distance = (rect.x - x) ** 2 + (rect.y - y) ** 2
+          if (distance < min) {
+            min = distance
+            nearest = range
+          }
+        }
+
+        return nearest
+      }
+
+      document.addEventListener('selectstart', e => e.preventDefault())
+    </script>
+  </body>
+
+</html>
