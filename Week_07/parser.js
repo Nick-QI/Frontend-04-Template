@@ -4,6 +4,68 @@ let currentTextNode = null
 let stack = [
   { type: 'document', children: [] }
 ]
+const css = require('css')
+let rules = []
+
+function addCSSRules(text) {
+  let ast = css.parse(text)
+  rules.push(...ast.stylesheet.rules)
+}
+
+function match(element, selector) {
+  if (!selector || !element.attributes) {
+    return false
+  }
+
+  if (selector.charAt(0) === '#') {
+    var attr = element.attributes.filter(attr => attr.name === 'id')[0]
+    if (attr && attr.value === selector.replace('#', '')) {
+      return true
+    }
+  } else if (selector.charAt(0) === '.') {
+    var attr = element.attributes.filter(attr => attr.name === 'class')[0]
+    if (attr && attr.value === selector.replace('.', '')) {
+      return true
+    }
+  } else {
+    if (element.tagName === selector) {
+      return true
+    }
+  }
+  return false
+}
+
+function computeCSS(element) {
+  let elements = stack.slice().reverse()
+  if (!element.computedStyle) {
+    element.computedStyle = {}
+  }
+
+  for (const rule of rules) {
+    var selectorParts = rule.selectors[0].split(' ').reverse()
+
+    if (!match(element, selectorParts[0])) {
+      continue
+    }
+
+    let matched = false
+
+    var j = 1
+    for (var i = 0; i < elements.length; i++) {
+      if (match(elements[i], selectorParts[j])) {
+        j++
+      }
+    }
+
+    if (j >= selectorParts.length) {
+      matched = true
+    }
+
+    if (matched) {
+      // 匹配到就加入
+    }
+  }
+}
 
 function emit(token) {
   if (token.type === 'text') {
@@ -29,6 +91,7 @@ function emit(token) {
       }
     }
 
+    computeCSS(element)
     top.children.push(element)
     element.parent = top
 
@@ -41,6 +104,9 @@ function emit(token) {
     if (top.tagName !== token.tagName) {
       throw new Error('Tag start end does not match !')
     } else {
+      if (top.tagName === 'style') {
+        addCSSRules(top.children[0].content)
+      }
       stack.pop()
     }
     currentTextNode = null
