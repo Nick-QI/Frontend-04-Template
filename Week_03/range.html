@@ -18,34 +18,34 @@
 
   <body>
     <div id="container">
-我是测试属于我是测试属于
-我是测试属于
-我是测试属于
-我是测试属于
-我是测试属于
-我是测试属于
-我是测试属于
-我是测试属于
-我是测试属于
-我是测试属于
-我是测试属于
-我是测试属于
-我是测试属于
-我是测试属于
-我是测试属于
-我是测试属于
-我是测试属于
-我是测试属于
-我是测试属于
-我是测试属于
-我是测试属于
-我是测试属于
-我是测试属于
-我是测试属于
-我是测试属于
-我是测试属于
-我是测试属于
-我是测试属于
+      我是测试属于我是测试属于
+      我是测试属于
+      我是测试属于
+      我是测试属于
+      我是测试属于
+      我是测试属于
+      我是测试属于
+      我是测试属于
+      我是测试属于
+      我是测试属于
+      我是测试属于
+      我是测试属于
+      我是测试属于
+      我是测试属于
+      我是测试属于
+      我是测试属于
+      我是测试属于
+      我是测试属于
+      我是测试属于
+      我是测试属于
+      我是测试属于
+      我是测试属于
+      我是测试属于
+      我是测试属于
+      我是测试属于
+      我是测试属于
+      我是测试属于
+      我是测试属于
 
     </div>
     <div id="box"></div>
@@ -80,6 +80,7 @@
 
       const container = document.querySelector('#container')
       const text = container.childNodes[0]
+      console.log(text)
       for (let i = 0; i < text.textContent.length; i++) {
         let range = document.createRange()
         range.setStart(text, i)
@@ -87,7 +88,7 @@
 
         ranges.push(range)
       }
-
+      console.log(ranges)
       function getNearest(x, y) {
         let min = Infinity
         let nearest = null
