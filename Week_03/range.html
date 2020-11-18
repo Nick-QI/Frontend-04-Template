@@ -85,8 +85,8 @@
         let range = document.createRange()
         range.setStart(text, i)
         range.setEnd(text, i)
-
         ranges.push(range)
+        console.log(range)
       }
       console.log(ranges)
       function getNearest(x, y) {
