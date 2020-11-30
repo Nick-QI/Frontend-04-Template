@@ -1,5 +1,6 @@
 export class Component {
-  constructor(type) {
+  constructor() {
+    // this.root = this.render()
   }
   setAttribute(name, value) {
     this.root.setAttribute(name, value)
@@ -14,18 +15,17 @@ export class Component {
 
 class ElementWrapper extends Component {
   constructor(type) {
+    super()
     this.root = document.createElement(type)
   }
-
 }
-
-
 class TextWrapper extends Component {
   constructor(content) {
+    super()
     this.root = document.createTextNode(content)
   }
-
 }
+
 
 
 export function createElement(type, attributes, ...children) {
@@ -35,11 +35,9 @@ export function createElement(type, attributes, ...children) {
   } else {
     element = new type
   }
-
-  for (let name in attributes) {
+  for (const name in attributes) {
     element.setAttribute(name, attributes[name])
   }
-
   for (let child of children) {
     if (typeof child === 'string') {
       child = new TextWrapper(child)
