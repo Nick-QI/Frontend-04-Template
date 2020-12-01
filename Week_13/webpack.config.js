@@ -1,6 +1,6 @@
 module.exports = {
   mode: 'development',
-  entry: './main.js',
+  entry: './animation-demo.js',
   module: {
     rules: [
       {
