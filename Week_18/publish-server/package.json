@@ -1,0 +1,13 @@
+{
+  "name": "publish-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js",
+    "publish": "scp -r -P 8022 ./* ricesgui@127.0.0.1:/home/ricesgui/publish-server"
+  },
+  "author": "",
+  "license": "ISC"
+}
